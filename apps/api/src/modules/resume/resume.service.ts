@@ -8,10 +8,7 @@ import { storageProvider } from "../../lib/storage/index.js";
 import { NotFoundError, ValidationError } from "../../lib/errors.js";
 import { logger } from "../../lib/logger.js";
 import * as profileService from "../profile/profile.service.js";
-import { DeterministicResumeParser } from "./parsers/deterministicResumeParser.js";
-
-/** Swappable — see packages/shared ResumeParser. A hosted/AI parser can replace or augment this later. */
-const resumeParser = new DeterministicResumeParser();
+import { resumeParser } from "./parsers/index.js";
 
 export interface UploadedFile {
   originalname: string;

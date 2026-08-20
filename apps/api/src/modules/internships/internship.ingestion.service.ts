@@ -4,7 +4,7 @@ import { prisma } from "../../lib/prisma.js";
 import { logger } from "../../lib/logger.js";
 import { lookupSkill } from "../../lib/skills/skillsDictionary.js";
 import { internshipProviders } from "./providers/index.js";
-import { DeterministicJobDescriptionParser } from "./parsers/deterministicJobDescriptionParser.js";
+import { jobDescriptionParser } from "./parsers/index.js";
 
 /**
  * Ingestion pipeline: fetch → normalize → deduplicate → store. One
@@ -12,7 +12,6 @@ import { DeterministicJobDescriptionParser } from "./parsers/deterministicJobDes
  * `ingestAllProviders`) — each provider's errors are recorded on its own
  * IngestionResultDTO instead.
  */
-const jobDescriptionParser = new DeterministicJobDescriptionParser();
 
 async function ensureProviderRow(provider: InternshipProviderContract): Promise<InternshipProviderRow> {
   return prisma.internshipProvider.upsert({

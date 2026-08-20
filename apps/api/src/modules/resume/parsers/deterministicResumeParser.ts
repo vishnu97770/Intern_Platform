@@ -1,6 +1,7 @@
 import type { ParsedResume, ResumeParser } from "@intern-platform/shared";
 import { escapeRegex, lookupSkill, SKILLS_DICTIONARY } from "../../../lib/skills/skillsDictionary.js";
 import { DOCX_MIME_TYPE, extractResumeText, PDF_MIME_TYPE } from "./textExtraction.js";
+import { computeResumeConfidence } from "./resumeConfidence.js";
 
 /**
  * Rule-based resume parser: no AI/network dependency, same input always
@@ -251,15 +252,6 @@ function extractCertifications(lines: string[]): ParsedResume["certifications"] 
     });
 }
 
-function computeConfidence(parsed: Omit<ParsedResume, "rawText" | "confidence">): number {
-  const coreFields = [parsed.fullName, parsed.email, parsed.phone, parsed.college, parsed.degree, parsed.graduationYear, parsed.cgpa];
-  const filled = coreFields.filter((v) => v !== null && v !== "").length;
-  let score = filled / coreFields.length;
-  if (parsed.skills.length > 0) score += 0.1;
-  if (parsed.projects.length > 0 || parsed.experience.length > 0) score += 0.05;
-  return Math.max(0, Math.min(1, Math.round(score * 100) / 100));
-}
-
 /** Pure parsing logic, kept separate from file I/O so it's directly unit-testable. */
 export function parseResumeText(rawText: string): ParsedResume {
   const lines = rawText.split(/\r?\n/);
@@ -296,7 +288,7 @@ export function parseResumeText(rawText: string): ParsedResume {
     certifications,
   };
 
-  return { ...base, rawText, confidence: computeConfidence(base) };
+  return { ...base, rawText, confidence: computeResumeConfidence(base) };
 }
 
 export class DeterministicResumeParser implements ResumeParser {

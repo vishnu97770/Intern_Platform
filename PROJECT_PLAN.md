@@ -133,6 +133,7 @@ User 1─* Notification
 | 5 | Application tracking, manual apply flow | Done |
 | 6 | Auto-apply rules, queue, background workers | Done |
 | 7 | Production hardening | Done |
+| 8 | External LLM-assisted parsing (Groq/Together/OpenRouter) | Done |
 
 ## Key Interfaces (defined early, implemented incrementally)
 
@@ -144,6 +145,65 @@ User 1─* Notification
 
 Defining these now (in `packages/shared`) means later phases plug in
 implementations without reshaping the modules that already depend on them.
+
+## Phase 8 — External LLM providers (Groq / Together AI / OpenRouter)
+
+Three external API credentials became available: `GROQ_API_KEY`,
+`TOGETHER_API_KEY`, `OPENROUTER_API_KEY` (each paired with a `*_MODEL`
+variable). All three are general-purpose hosted LLM chat-completion APIs
+(OpenAI-compatible), **not** internship/job-board or ATS APIs — so they
+integrate behind `ResumeParser` and `JobDescriptionParser`, not
+`InternshipProvider`/`ApplicationProvider`. Fabricating an
+`InternshipProvider` on top of a chat API (i.e. asking an LLM to "find
+internships") would mean risking hallucinated listings — not something
+this platform does. `MockInternshipProvider` and `MockApplicationProvider`
+remain the active providers until a real job-board/ATS API is available.
+
+Architecture:
+
+```
+lib/llm/llmClient.ts          Cascading OpenAI-compatible chat client:
+                               tries Groq → Together → OpenRouter in order,
+                               each provider once, bounded by
+                               LLM_TIMEOUT_SECONDS per call and
+                               LLM_TOTAL_BUDGET_SECONDS overall. Never
+                               retries a failed provider — falls through
+                               to the next one instead, so this can never
+                               become an aggressive request loop.
+
+resume/parsers/llmResumeParser.ts           LLM-backed ResumeParser
+internships/parsers/llmJobDescriptionParser.ts  LLM-backed JobDescriptionParser
+
+resume/parsers/index.ts       FallbackResumeParser: tries the LLM parser
+internships/parsers/index.ts  FallbackJobDescriptionParser: same pattern
+                               when at least one provider is configured,
+                               falls back to the deterministic parser on
+                               ANY failure. Always deterministic-only in
+                               NODE_ENV=test — the test suite never depends
+                               on live external API calls, even though the
+                               real API keys are present in .env locally.
+```
+
+Every field from an LLM completion is treated as untrusted input: parsed
+through a Zod schema with a `.catch()` default per field (one malformed
+field degrades to `null`/`[]` rather than failing the whole parse), skill
+names are resolved against the existing skills dictionary (never trusted
+as-is — this is what keeps a confirmed skill mapped to the same `Skill`
+row the deterministic parser and matching engine already use), and every
+string/array is length-capped to what the existing profile/internship
+validators accept.
+
+**Known local configuration issue (as of the last verification pass):** a
+manual smoke test against the three live APIs found `GROQ_MODEL` pointing
+at a model the configured key can't access (HTTP 404), and both
+`TOGETHER_MODEL` and `OPENROUTER_MODEL` holding what look like API-key-shaped
+strings rather than real model identifiers (HTTP 404/400). Until these
+`.env` values are corrected, `isLlmEnabled()` still reports the providers
+as "configured" (key + model both present), but every real call fails and
+the fallback registries transparently drop back to the deterministic
+parser — proven both by the automated fallback tests and by this
+misconfiguration itself, live. No code change is needed once the `.env`
+values are fixed to real model identifiers from each provider's dashboard.
 
 ## Non-goals / explicit restrictions
 

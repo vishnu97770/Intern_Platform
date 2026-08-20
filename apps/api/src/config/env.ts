@@ -20,6 +20,26 @@ const envSchema = z.object({
   // How often the background auto-apply scan runs for every student with
   // auto-apply enabled (Phase 6 background job). Defaults to 15 minutes.
   AUTO_APPLY_SCAN_INTERVAL_MS: z.coerce.number().int().positive().default(15 * 60 * 1000),
+
+  // ---- Hosted LLM providers (optional) ---------------------------------
+  // Cascading chat-completion backends for the LLM-assisted resume/job
+  // parsers (see lib/llm/llmClient.ts). All optional — with none
+  // configured, parsing runs on the deterministic parser only, exactly as
+  // before. Each provider needs both its API key and its model id to be
+  // considered configured; a key with no model (or vice versa) is treated
+  // as not configured for that provider rather than erroring at startup,
+  // since these are enhancements, never a hard requirement.
+  GROQ_API_KEY: z.string().optional(),
+  GROQ_MODEL: z.string().optional(),
+  TOGETHER_API_KEY: z.string().optional(),
+  TOGETHER_MODEL: z.string().optional(),
+  OPENROUTER_API_KEY: z.string().optional(),
+  OPENROUTER_MODEL: z.string().optional(),
+  // Per-provider request timeout and total cross-provider budget for one
+  // parse call, in seconds — bounds both a single slow provider and the
+  // worst case of falling through all of them.
+  LLM_TIMEOUT_SECONDS: z.coerce.number().positive().default(8),
+  LLM_TOTAL_BUDGET_SECONDS: z.coerce.number().positive().default(20),
 });
 
 const parsed = envSchema.safeParse(process.env);
