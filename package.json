@@ -1,0 +1,23 @@
+{
+  "name": "intern-platform",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Internship discovery, matching, and auto-apply platform for college students.",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:api": "npm run dev -w @intern-platform/api",
+    "dev:web": "npm run dev -w @intern-platform/web",
+    "build": "npm run build -w @intern-platform/shared && npm run build -w @intern-platform/api && npm run build -w @intern-platform/web",
+    "test": "npm run test -w @intern-platform/shared --if-present && npm run test -w @intern-platform/api --if-present && npm run test -w @intern-platform/web --if-present",
+    "lint": "npm run lint -w @intern-platform/api --if-present && npm run lint -w @intern-platform/web --if-present",
+    "typecheck": "npm run typecheck -w @intern-platform/shared --if-present && npm run typecheck -w @intern-platform/api --if-present && npm run typecheck -w @intern-platform/web --if-present",
+    "db:up": "docker compose up -d postgres redis",
+    "db:down": "docker compose down"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

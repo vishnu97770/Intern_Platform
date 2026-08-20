@@ -1,0 +1,172 @@
+// Intern Platform — Phase 1 schema (Authentication + Student Profile).
+//
+// Future phases add: Resume, InternshipProvider, Internship, InternshipSkill,
+// MatchResult, AutoApplyRule, Application, ApplicationAttempt, Notification.
+// See PROJECT_PLAN.md for the full target ERD — those tables are introduced
+// in the phase that actually uses them, not created empty ahead of time.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Authentication
+// ---------------------------------------------------------------------------
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  profile       StudentProfile?
+  refreshTokens RefreshToken[]
+
+  @@map("users")
+}
+
+/// Refresh tokens are stored as a hash (never the raw token) so a leaked
+/// database dump does not itself grant session access. Rotated on every use.
+model RefreshToken {
+  id         String    @id @default(uuid())
+  userId     String
+  tokenHash  String    @unique
+  expiresAt  DateTime
+  revokedAt  DateTime?
+  createdAt  DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("refresh_tokens")
+}
+
+// ---------------------------------------------------------------------------
+// Student Profile
+// ---------------------------------------------------------------------------
+
+enum WorkModePreference {
+  REMOTE
+  HYBRID
+  ONSITE
+  ANY
+}
+
+model StudentProfile {
+  id        String @id @default(uuid())
+  userId    String @unique
+
+  fullName            String
+  phone               String?
+  location            String?
+  college             String?
+  degree              String?
+  branch              String?
+  graduationYear      Int?
+  cgpa                Float?
+  bio                 String?
+  githubUrl           String?
+  linkedinUrl         String?
+  portfolioUrl        String?
+  preferredRoles      String[] @default([])
+  preferredLocations  String[] @default([])
+  workModePreference  WorkModePreference @default(ANY)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  skills         StudentSkill[]
+  projects       Project[]
+  experience     Experience[]
+  certifications Certification[]
+
+  @@map("student_profiles")
+}
+
+enum SkillCategory {
+  LANGUAGE
+  FRAMEWORK
+  DATABASE
+  CLOUD
+  TOOL
+  OTHER
+}
+
+/// Catalog of known skills, shared across student profiles and (from Phase 3)
+/// internship requirements, so matching can compare by skill id rather than
+/// fuzzy string matching.
+model Skill {
+  id       String        @id @default(uuid())
+  name     String        @unique
+  category SkillCategory @default(OTHER)
+
+  students StudentSkill[]
+
+  @@map("skills")
+}
+
+model StudentSkill {
+  studentProfileId String
+  skillId          String
+  proficiency      Int? // 1-5 self-rating, optional
+
+  studentProfile StudentProfile @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
+  skill          Skill          @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  @@id([studentProfileId, skillId])
+  @@index([skillId])
+  @@map("student_skills")
+}
+
+model Project {
+  id               String   @id @default(uuid())
+  studentProfileId String
+  title            String
+  description      String?
+  techStack        String[] @default([])
+  url              String?
+  startDate        DateTime?
+  endDate          DateTime?
+
+  studentProfile StudentProfile @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
+
+  @@index([studentProfileId])
+  @@map("projects")
+}
+
+model Experience {
+  id               String    @id @default(uuid())
+  studentProfileId String
+  title            String
+  organization     String
+  description      String?
+  startDate        DateTime
+  endDate          DateTime?
+  isCurrent        Boolean   @default(false)
+
+  studentProfile StudentProfile @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
+
+  @@index([studentProfileId])
+  @@map("experience")
+}
+
+model Certification {
+  id               String    @id @default(uuid())
+  studentProfileId String
+  name             String
+  issuer           String?
+  issueDate        DateTime?
+  url              String?
+
+  studentProfile StudentProfile @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
+
+  @@index([studentProfileId])
+  @@map("certifications")
+}
