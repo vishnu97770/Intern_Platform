@@ -38,6 +38,9 @@ export function NavBar() {
             <NavLink to="/applications" className={linkClass}>
               Applications
             </NavLink>
+            <NavLink to="/auto-apply" className={linkClass}>
+              Auto-apply
+            </NavLink>
             <Button variant="secondary" onClick={handleLogout}>
               Log out
             </Button>

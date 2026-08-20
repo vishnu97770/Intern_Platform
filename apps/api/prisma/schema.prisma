@@ -92,6 +92,7 @@ model StudentProfile {
   resumes        Resume[]
   matchResults   MatchResult[]
   applications   Application[]
+  autoApplyRule  AutoApplyRule?
 
   @@map("student_profiles")
 }
@@ -403,4 +404,32 @@ model ApplicationAttempt {
 
   @@index([applicationId])
   @@map("application_attempts")
+}
+
+// ---------------------------------------------------------------------------
+// Authorized Auto-Apply (Phase 6)
+// ---------------------------------------------------------------------------
+
+/// One configuration per student, upserted rather than a list — auto-apply
+/// is a single on/off pipeline with one set of rules, not multiple
+/// concurrent named rule sets. `isEnabled` defaults false and
+/// `requireManualApproval` defaults true: automation is opt-in, and full
+/// unattended submission is a second, separate opt-in on top of that.
+model AutoApplyRule {
+  id                    String   @id @default(uuid())
+  studentProfileId      String   @unique
+  isEnabled             Boolean  @default(false)
+  minMatchScore         Int      @default(80)
+  maxApplicationsPerDay Int      @default(5)
+  preferredRoles        String[] @default([])
+  preferredLocations    String[] @default([])
+  excludedCompanies     String[] @default([])
+  requireManualApproval Boolean  @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  studentProfile StudentProfile @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
+
+  @@map("auto_apply_rules")
 }

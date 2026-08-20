@@ -64,7 +64,11 @@ async function requireOwnedApplication(profileId: string, applicationId: string)
 }
 
 /** Creates a tracked application, or fails clearly if this internship is already tracked (see schema's duplicate-prevention note). */
-export async function createApplication(userId: string, input: CreateApplicationBody): Promise<ApplicationDTO> {
+export async function createApplication(
+  userId: string,
+  input: CreateApplicationBody,
+  method: "MANUAL" | "AUTO" = "MANUAL",
+): Promise<ApplicationDTO> {
   const profileId = await requireProfileId(userId);
 
   const internship = await prisma.internship.findUnique({ where: { id: input.internshipId } });
@@ -87,7 +91,7 @@ export async function createApplication(userId: string, input: CreateApplication
       applicationUrl: internship.applicationUrl,
       matchScore: cachedMatch?.overallScore ?? null,
       status: "DISCOVERED",
-      method: "MANUAL",
+      method,
     },
     include: applicationInclude,
   });

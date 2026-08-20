@@ -11,6 +11,7 @@ import { ResumePage } from "./routes/ResumePage";
 import { InternshipsPage } from "./routes/InternshipsPage";
 import { InternshipDetailPage } from "./routes/InternshipDetailPage";
 import { ApplicationsPage } from "./routes/ApplicationsPage";
+import { AutoApplyPage } from "./routes/AutoApplyPage";
 import { NotFoundPage } from "./routes/NotFoundPage";
 
 export function App() {
@@ -67,6 +68,14 @@ export function App() {
             element={
               <ProtectedRoute>
                 <ApplicationsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/auto-apply"
+            element={
+              <ProtectedRoute>
+                <AutoApplyPage />
               </ProtectedRoute>
             }
           />

@@ -5,6 +5,7 @@ import { resumeRouter } from "../modules/resume/resume.routes.js";
 import { internshipRouter } from "../modules/internships/internship.routes.js";
 import { matchingRouter } from "../modules/matching/matching.routes.js";
 import { applicationRouter } from "../modules/applications/application.routes.js";
+import { autoApplyRouter } from "../modules/auto-apply/autoApply.routes.js";
 
 export const apiRouter = Router();
 
@@ -18,3 +19,4 @@ apiRouter.use("/resume", resumeRouter);
 apiRouter.use("/internships", internshipRouter);
 apiRouter.use("/matches", matchingRouter);
 apiRouter.use("/applications", applicationRouter);
+apiRouter.use("/auto-apply", autoApplyRouter);

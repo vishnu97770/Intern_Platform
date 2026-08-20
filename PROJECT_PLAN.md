@@ -82,11 +82,26 @@ transitively prevents duplicate applications to the same posting) and
 `ApplicationAttempt` (append-only audit trail; every status change that
 represents a real submission/outcome adds a row rather than overwriting).
 
+Phase 6 adds: `AutoApplyRule` — one row per student (upserted, not a
+list), disabled and requiring manual approval by default. Background
+processing (BullMQ queues, namespaced per NODE_ENV so tests never share
+a queue with the running dev/production worker):
+`auto-apply-submit-*` (one job per submission, 3 retries with exponential
+backoff) and `auto-apply-scan-*` (a repeatable job, every
+`AUTO_APPLY_SCAN_INTERVAL_MS`, that runs the pipeline for every student
+with auto-apply enabled). See `ApplicationProvider` (packages/shared) and
+`modules/auto-apply/providers/` — no real internship source has a
+technically/contractually supported automated application channel yet,
+so the only registered provider is a demo/simulation against
+MockInternshipProvider's own fabricated domain; every other internship
+correctly resolves to "Manual Application Required" with the official
+link, never a scrape or bypass attempt.
+
 Future phases will add (not yet created — avoiding unused tables until the
 phase that needs them lands):
 
 ```
-AutoApplyRule, Notification
+Notification
 ```
 
 Full target ERD for reference:
@@ -116,7 +131,7 @@ User 1─* Notification
 | 3 | Internship schema, provider abstraction, listing | Done |
 | 4 | Matching engine, recommendations | Done |
 | 5 | Application tracking, manual apply flow | Done |
-| 6 | Auto-apply rules, queue, background workers | Not started |
+| 6 | Auto-apply rules, queue, background workers | Done |
 | 7 | Production hardening | Not started |
 
 ## Key Interfaces (defined early, implemented incrementally)

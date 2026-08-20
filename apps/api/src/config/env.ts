@@ -16,6 +16,10 @@ const envSchema = z.object({
   JWT_REFRESH_EXPIRES_IN: z.string().default("7d"),
   CORS_ORIGIN: z.string().default("http://localhost:5173"),
   UPLOAD_DIR: z.string().default("uploads"),
+  REDIS_URL: z.string().default("redis://localhost:6380"),
+  // How often the background auto-apply scan runs for every student with
+  // auto-apply enabled (Phase 6 background job). Defaults to 15 minutes.
+  AUTO_APPLY_SCAN_INTERVAL_MS: z.coerce.number().int().positive().default(15 * 60 * 1000),
 });
 
 const parsed = envSchema.safeParse(process.env);
