@@ -10,6 +10,26 @@ applications with less manual effort:
 See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full architecture,
 technology rationale, data model, and phase-by-phase build plan.
 
+## Features
+
+- **Auth** — email/password, short-lived JWT access tokens, rotating
+  hashed refresh tokens in an httpOnly cookie
+- **Profile** — education, skills, projects, experience, certifications
+- **Resume** — PDF/DOCX upload, deterministic parsing, review-and-confirm
+  before anything touches the profile
+- **Internship discovery** — provider abstraction (mock/seed provider
+  included), search/filter/sort/paginate, duplicate-safe ingestion
+- **Matching** — deterministic, explainable 0-100 score with a
+  skill/education/experience/location/role breakdown and a recommendation
+  dashboard
+- **Applications** — full status lifecycle with an append-only attempt
+  audit trail, manual apply flow
+- **Auto-apply** — opt-in rules engine, a traceable 9-gate eligibility
+  checklist, BullMQ background queue + recurring scan, manual-approval
+  option
+- **Hardening** — rate limiting, security headers, `/api/health` with
+  real DB/Redis checks, structured logs with secret redaction
+
 ## Project structure
 
 ```

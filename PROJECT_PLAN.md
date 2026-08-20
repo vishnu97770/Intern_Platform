@@ -132,7 +132,7 @@ User 1─* Notification
 | 4 | Matching engine, recommendations | Done |
 | 5 | Application tracking, manual apply flow | Done |
 | 6 | Auto-apply rules, queue, background workers | Done |
-| 7 | Production hardening | Not started |
+| 7 | Production hardening | Done |
 
 ## Key Interfaces (defined early, implemented incrementally)
 

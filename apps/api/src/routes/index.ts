@@ -1,4 +1,6 @@
 import { Router } from "express";
+import { checkHealth } from "../modules/health/health.service.js";
+import { asyncHandler } from "../middleware/errorHandler.js";
 import { authRouter } from "../modules/auth/auth.routes.js";
 import { profileRouter } from "../modules/profile/profile.routes.js";
 import { resumeRouter } from "../modules/resume/resume.routes.js";
@@ -9,9 +11,13 @@ import { autoApplyRouter } from "../modules/auto-apply/autoApply.routes.js";
 
 export const apiRouter = Router();
 
-apiRouter.get("/health", (_req, res) => {
-  res.status(200).json({ status: "ok" });
-});
+apiRouter.get(
+  "/health",
+  asyncHandler(async (_req, res) => {
+    const health = await checkHealth();
+    res.status(health.status === "ok" ? 200 : 503).json(health);
+  }),
+);
 
 apiRouter.use("/auth", authRouter);
 apiRouter.use("/profile", profileRouter);

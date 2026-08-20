@@ -43,6 +43,13 @@ export function errorHandler(err: unknown, req: Request, res: Response, _next: N
     return;
   }
 
+  // express.json() throws a SyntaxError (with a `body` marker property) for malformed JSON —
+  // a client mistake, not a server fault, so it belongs in the 4xx family, not a generic 500.
+  if (err instanceof SyntaxError && "body" in err) {
+    res.status(400).json({ error: { code: "VALIDATION_ERROR", message: "Malformed JSON in request body." } });
+    return;
+  }
+
   logger.error({ err, path: req.path, method: req.method }, "Unhandled error");
   res.status(500).json({
     error: { code: "INTERNAL_ERROR", message: "An unexpected error occurred" },

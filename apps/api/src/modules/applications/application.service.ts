@@ -150,27 +150,33 @@ export async function updateApplicationStatus(
 
   const isFailureStatus = input.status === "FAILED" || input.status === "MANUAL_ACTION_REQUIRED";
 
-  await prisma.applicationAttempt.create({
-    data: {
-      applicationId: application.id,
-      attemptNumber: application.attempts.length + 1,
-      method,
-      status: input.status,
-      providerReference: input.providerReference ?? null,
-      failureReason: isFailureStatus ? (input.failureReason ?? null) : null,
-      completedAt: new Date(),
-    },
-  });
+  // Both writes represent one logical event (a status change and the
+  // attempt that caused it) — a transaction means a crash between them
+  // can never leave an attempt recorded against a status that was never
+  // actually applied, or vice versa.
+  const updated = await prisma.$transaction(async (tx) => {
+    await tx.applicationAttempt.create({
+      data: {
+        applicationId: application.id,
+        attemptNumber: application.attempts.length + 1,
+        method,
+        status: input.status,
+        providerReference: input.providerReference ?? null,
+        failureReason: isFailureStatus ? (input.failureReason ?? null) : null,
+        completedAt: new Date(),
+      },
+    });
 
-  const updated = await prisma.application.update({
-    where: { id: application.id },
-    data: {
-      status: input.status,
-      appliedAt: input.status === "APPLIED" ? (application.appliedAt ?? new Date()) : application.appliedAt,
-      failureReason: isFailureStatus ? (input.failureReason ?? application.failureReason) : null,
-      notes: input.notes !== undefined ? input.notes : application.notes,
-    },
-    include: applicationInclude,
+    return tx.application.update({
+      where: { id: application.id },
+      data: {
+        status: input.status,
+        appliedAt: input.status === "APPLIED" ? (application.appliedAt ?? new Date()) : application.appliedAt,
+        failureReason: isFailureStatus ? (input.failureReason ?? application.failureReason) : null,
+        notes: input.notes !== undefined ? input.notes : application.notes,
+      },
+      include: applicationInclude,
+    });
   });
 
   return toApplicationDTO(updated);

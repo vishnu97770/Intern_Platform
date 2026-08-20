@@ -403,6 +403,8 @@ model ApplicationAttempt {
   application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
 
   @@index([applicationId])
+  /// Speeds up the auto-apply daily-limit check (count today's AUTO attempts).
+  @@index([method, startedAt])
   @@map("application_attempts")
 }
 
