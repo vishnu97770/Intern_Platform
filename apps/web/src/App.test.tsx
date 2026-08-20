@@ -68,6 +68,52 @@ describe("App routing + auth", () => {
     await waitFor(() => expect(screen.getByRole("heading", { name: /dashboard/i })).toBeInTheDocument());
   });
 
+  it("shows the specific validation reason on a failed registration instead of the generic top-level message", async () => {
+    // Regression test for the reported registration bug: the API's
+    // VALIDATION_ERROR response always carries a generic top-level
+    // `error.message` ("Request validation failed") plus the real,
+    // actionable reason(s) in `error.details` (see errorHandler.ts).
+    // apiClient.ts must surface the specific reason, not the generic one.
+    (fetch as ReturnType<typeof vi.fn>).mockImplementation((input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes("/auth/refresh")) return Promise.resolve(jsonResponse({ error: {} }, 401));
+      if (url.includes("/auth/register")) {
+        return Promise.resolve(
+          jsonResponse(
+            {
+              error: {
+                code: "VALIDATION_ERROR",
+                message: "Request validation failed",
+                details: [{ path: "password", message: "Password must contain a digit" }],
+              },
+            },
+            400,
+          ),
+        );
+      }
+      return Promise.resolve(jsonResponse({}, 200));
+    });
+
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter initialEntries={["/register"]}>
+        <App />
+      </MemoryRouter>,
+    );
+
+    await screen.findByRole("heading", { name: /create your account/i });
+    await user.type(screen.getByLabelText(/full name/i), "New Student");
+    await user.type(screen.getByLabelText(/^email$/i), "new@example.com");
+    // Passes the form's own client-side pattern check (has upper/lower/digit,
+    // 10+ chars) so the request actually reaches the mocked API — this
+    // isolates the error-*display* bug from the client-side validation fix.
+    await user.type(screen.getByLabelText(/^password$/i), "StrongPass1");
+    await user.click(screen.getByRole("button", { name: /create account/i }));
+
+    expect(await screen.findByText("Password must contain a digit")).toBeInTheDocument();
+    expect(screen.queryByText(/^Request validation failed$/)).not.toBeInTheDocument();
+  });
+
   it("shows the landing page for an unauthenticated visitor at /", async () => {
     (fetch as ReturnType<typeof vi.fn>).mockResolvedValue(jsonResponse({ error: {} }, 401));
 

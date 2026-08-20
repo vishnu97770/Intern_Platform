@@ -11,6 +11,28 @@ export class ApiError extends Error {
   }
 }
 
+interface ErrorResponsePayload {
+  error?: {
+    message?: string;
+    code?: string;
+    /** Present on VALIDATION_ERROR responses (see errorHandler.ts) — the top-level `message` is always the generic "Request validation failed". */
+    details?: Array<{ path: string; message: string }>;
+  };
+}
+
+/** Prefers the specific per-field reason(s) over the generic top-level message, so "Request validation failed" never hides why. */
+function extractErrorMessage(payload: ErrorResponsePayload | null, fallback: string): string {
+  if (payload?.error?.details?.length) {
+    return payload.error.details.map((d) => d.message).join(" ");
+  }
+  return payload?.error?.message ?? fallback;
+}
+
+async function toApiError(res: Response): Promise<ApiError> {
+  const payload = (await res.json().catch(() => null)) as ErrorResponsePayload | null;
+  return new ApiError(extractErrorMessage(payload, res.statusText), res.status, payload?.error?.code ?? "UNKNOWN");
+}
+
 let accessToken: string | null = null;
 /** Called by ApiClient after a successful silent refresh, so future requests carry the new token. */
 let onTokenRefreshed: ((token: string) => void) | null = null;
@@ -67,8 +89,7 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
   }
 
   if (!res.ok) {
-    const payload = await res.json().catch(() => null);
-    throw new ApiError(payload?.error?.message ?? res.statusText, res.status, payload?.error?.code ?? "UNKNOWN");
+    throw await toApiError(res);
   }
 
   if (res.status === 204) return undefined as T;
@@ -99,8 +120,7 @@ export async function apiUpload<T>(path: string, formData: FormData): Promise<T>
   }
 
   if (!res.ok) {
-    const payload = await res.json().catch(() => null);
-    throw new ApiError(payload?.error?.message ?? res.statusText, res.status, payload?.error?.code ?? "UNKNOWN");
+    throw await toApiError(res);
   }
 
   return res.json() as Promise<T>;
@@ -116,8 +136,7 @@ export async function apiRequestBlob(path: string): Promise<Blob> {
   }
 
   if (!res.ok) {
-    const payload = await res.json().catch(() => null);
-    throw new ApiError(payload?.error?.message ?? res.statusText, res.status, payload?.error?.code ?? "UNKNOWN");
+    throw await toApiError(res);
   }
 
   return res.blob();

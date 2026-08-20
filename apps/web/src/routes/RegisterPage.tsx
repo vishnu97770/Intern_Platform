@@ -33,7 +33,7 @@ export function RegisterPage() {
       <h1 className="text-2xl font-semibold text-slate-900">Create your account</h1>
       <p className="mt-1 text-sm text-slate-500">Start by telling us who you are.</p>
 
-      <form className="mt-6 flex flex-col gap-4" onSubmit={handleSubmit} noValidate>
+      <form className="mt-6 flex flex-col gap-4" onSubmit={handleSubmit}>
         <TextField
           label="Full name"
           name="fullName"
@@ -58,6 +58,12 @@ export function RegisterPage() {
           autoComplete="new-password"
           required
           minLength={10}
+          // Mirrors auth.validators.ts's registerSchema exactly, so a
+          // non-compliant password is caught client-side (with a clear
+          // native validation message) instead of silently reaching the
+          // API and coming back as an opaque "Request validation failed".
+          pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{10,}"
+          title="At least 10 characters, with an uppercase letter, a lowercase letter, and a digit."
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />

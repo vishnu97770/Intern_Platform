@@ -46,11 +46,34 @@ describe("POST /api/auth/register", () => {
     expect(res.status).toBe(409);
   });
 
-  it("rejects a weak password with 400", async () => {
+  it("rejects a weak password with 400 and an actionable, field-specific reason", async () => {
     const res = await request(app)
       .post("/api/auth/register")
       .send({ ...validRegisterBody, password: "weak" });
     expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe("VALIDATION_ERROR");
+    // The frontend (apiClient.ts) reads `error.details` to show the real
+    // reason instead of the generic top-level `error.message` — this pins
+    // that contract so a regression here doesn't silently break it again.
+    expect(res.body.error.details).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ path: "password", message: expect.stringContaining("digit") }),
+        expect.objectContaining({ path: "password", message: expect.stringContaining("uppercase") }),
+      ]),
+    );
+  });
+
+  it("rejects a password missing only complexity (length is fine) with the specific composition reasons", async () => {
+    // Regression case for the reported bug: a password that "looks"
+    // reasonable (long enough) but lacks required character classes must
+    // still be rejected, with a reason a user can act on.
+    const res = await request(app)
+      .post("/api/auth/register")
+      .send({ ...validRegisterBody, password: "lowercaseonly" });
+    expect(res.status).toBe(400);
+    expect(res.body.error.details).toEqual(
+      expect.arrayContaining([expect.objectContaining({ path: "password" })]),
+    );
   });
 
   it("rejects an invalid email with 400", async () => {
