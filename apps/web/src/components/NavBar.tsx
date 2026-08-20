@@ -35,6 +35,9 @@ export function NavBar() {
             <NavLink to="/internships" className={linkClass}>
               Internships
             </NavLink>
+            <NavLink to="/applications" className={linkClass}>
+              Applications
+            </NavLink>
             <Button variant="secondary" onClick={handleLogout}>
               Log out
             </Button>

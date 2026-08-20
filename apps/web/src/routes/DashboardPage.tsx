@@ -8,12 +8,10 @@ import { MatchScoreCard } from "../components/MatchScoreCard";
 const liveModules = [
   { title: "Resume", description: "Upload a PDF/DOCX resume and review proposed profile data.", to: "/resume" },
   { title: "Internships", description: "Discover internships from every connected provider.", to: "/internships" },
+  { title: "Applications", description: "Track every application in one place.", to: "/applications" },
 ];
 
-const upcomingModules = [
-  { title: "Applications", description: "Track every application in one place.", phase: "Phase 5" },
-  { title: "Auto-apply", description: "Configure rules for automatic applications.", phase: "Phase 6" },
-];
+const upcomingModules = [{ title: "Auto-apply", description: "Configure rules for automatic applications.", phase: "Phase 6" }];
 
 export function DashboardPage() {
   return (

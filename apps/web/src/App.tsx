@@ -10,6 +10,7 @@ import { ProfilePage } from "./routes/ProfilePage";
 import { ResumePage } from "./routes/ResumePage";
 import { InternshipsPage } from "./routes/InternshipsPage";
 import { InternshipDetailPage } from "./routes/InternshipDetailPage";
+import { ApplicationsPage } from "./routes/ApplicationsPage";
 import { NotFoundPage } from "./routes/NotFoundPage";
 
 export function App() {
@@ -58,6 +59,14 @@ export function App() {
             element={
               <ProtectedRoute>
                 <InternshipDetailPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/applications"
+            element={
+              <ProtectedRoute>
+                <ApplicationsPage />
               </ProtectedRoute>
             }
           />

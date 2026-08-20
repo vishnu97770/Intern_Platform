@@ -76,11 +76,17 @@ Phase 4 adds: `MatchResult` — a cached, deterministic score per
 (student, internship) pair, unique on `[studentProfileId, internshipId]`
 so recalculating upserts instead of accumulating history rows.
 
+Phase 5 adds: `Application` (unique on `[studentProfileId, internshipId]`
+— since Internship is already deduplicated by provider+externalId, this
+transitively prevents duplicate applications to the same posting) and
+`ApplicationAttempt` (append-only audit trail; every status change that
+represents a real submission/outcome adds a row rather than overwriting).
+
 Future phases will add (not yet created — avoiding unused tables until the
 phase that needs them lands):
 
 ```
-AutoApplyRule, Application, ApplicationAttempt, Notification
+AutoApplyRule, Notification
 ```
 
 Full target ERD for reference:
@@ -109,7 +115,7 @@ User 1─* Notification
 | 2 | Resume upload, extraction, parsing, review | Done |
 | 3 | Internship schema, provider abstraction, listing | Done |
 | 4 | Matching engine, recommendations | Done |
-| 5 | Application tracking, manual apply flow | Not started |
+| 5 | Application tracking, manual apply flow | Done |
 | 6 | Auto-apply rules, queue, background workers | Not started |
 | 7 | Production hardening | Not started |
 

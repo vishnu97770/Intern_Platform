@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import type { InternshipDetailDTO, MatchResultRecordDTO } from "@intern-platform/shared";
+import type { ApplicationDTO, InternshipDetailDTO, MatchResultRecordDTO } from "@intern-platform/shared";
 import { getInternship } from "../lib/internshipApi";
 import { calculateMatch, getMatch } from "../lib/matchingApi";
+import { createApplication, updateApplicationStatus } from "../lib/applicationApi";
 import { ApiError } from "../lib/apiClient";
 import { Button } from "../components/Button";
 import { MatchScoreCard } from "../components/MatchScoreCard";
@@ -14,6 +15,9 @@ export function InternshipDetailPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [match, setMatch] = useState<MatchResultRecordDTO | null>(null);
   const [isMatching, setIsMatching] = useState(false);
+  const [application, setApplication] = useState<ApplicationDTO | null>(null);
+  const [trackError, setTrackError] = useState<string | null>(null);
+  const [isTracking, setIsTracking] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -40,6 +44,30 @@ export function InternshipDetailPage() {
     } finally {
       setIsMatching(false);
     }
+  }
+
+  async function handleTrack() {
+    if (!id) return;
+    setIsTracking(true);
+    setTrackError(null);
+    try {
+      setApplication(await createApplication(id));
+    } catch (err) {
+      setTrackError(
+        err instanceof ApiError && err.status === 409
+          ? "You're already tracking this internship — see it on your Applications page."
+          : err instanceof ApiError
+            ? err.message
+            : "Couldn't track this application.",
+      );
+    } finally {
+      setIsTracking(false);
+    }
+  }
+
+  async function handleMarkApplied() {
+    if (!application) return;
+    setApplication(await updateApplicationStatus(application.id, { status: "APPLIED" }));
   }
 
   if (isLoading) {
@@ -180,7 +208,32 @@ export function InternshipDetailPage() {
           >
             View original listing
           </a>
+
+          {!application ? (
+            <Button variant="secondary" onClick={handleTrack} isLoading={isTracking}>
+              Track this application
+            </Button>
+          ) : (
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
+                Status: {application.status.replace(/_/g, " ")}
+              </span>
+              {application.status !== "APPLIED" && (
+                <Button variant="secondary" onClick={handleMarkApplied}>
+                  Mark as applied
+                </Button>
+              )}
+              <Link to="/applications" className="text-sm font-medium text-brand-700 hover:underline">
+                View in Applications
+              </Link>
+            </div>
+          )}
         </div>
+        {trackError && (
+          <p className="mt-2 text-sm text-red-600" role="alert">
+            {trackError}
+          </p>
+        )}
       </div>
     </div>
   );

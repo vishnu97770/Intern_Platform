@@ -91,6 +91,7 @@ model StudentProfile {
   certifications Certification[]
   resumes        Resume[]
   matchResults   MatchResult[]
+  applications   Application[]
 
   @@map("student_profiles")
 }
@@ -277,6 +278,7 @@ model Internship {
   provider     InternshipProvider @relation(fields: [providerId], references: [id], onDelete: Cascade)
   skills       InternshipSkill[]
   matchResults MatchResult[]
+  applications Application[]
 
   @@unique([providerId, externalId])
   @@index([isActive, discoveredAt])
@@ -327,4 +329,78 @@ model MatchResult {
   @@unique([studentProfileId, internshipId])
   @@index([studentProfileId, overallScore])
   @@map("match_results")
+}
+
+// ---------------------------------------------------------------------------
+// Application Tracking (Phase 5)
+// ---------------------------------------------------------------------------
+
+enum ApplicationStatus {
+  DISCOVERED
+  ELIGIBLE
+  QUEUED
+  APPLYING
+  APPLIED
+  FAILED
+  MANUAL_ACTION_REQUIRED
+  REJECTED
+  INTERVIEW
+  OFFER
+  WITHDRAWN
+}
+
+enum ApplicationMethod {
+  MANUAL
+  AUTO
+}
+
+/// One student's tracked application to one internship. Duplicate
+/// prevention is `@@unique([studentProfileId, internshipId])` — since
+/// Internship itself is already deduplicated by (provider, externalId)
+/// at ingestion (see Internship above), this transitively prevents two
+/// applications to the same provider + external job id.
+model Application {
+  id               String            @id @default(uuid())
+  studentProfileId String
+  internshipId     String
+  matchScore       Int?
+  status           ApplicationStatus @default(DISCOVERED)
+  method           ApplicationMethod @default(MANUAL)
+  applicationUrl   String
+  appliedAt        DateTime?
+  failureReason    String?
+  notes            String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  studentProfile StudentProfile       @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
+  internship     Internship           @relation(fields: [internshipId], references: [id], onDelete: Cascade)
+  attempts       ApplicationAttempt[]
+
+  @@unique([studentProfileId, internshipId])
+  @@index([studentProfileId, status])
+  @@index([studentProfileId, createdAt])
+  @@map("applications")
+}
+
+/// Audit trail entry for one submission attempt against an application —
+/// every automatic (Phase 6) or manual status change that represents an
+/// actual submission/outcome is recorded here, never just overwritten.
+model ApplicationAttempt {
+  id                String            @id @default(uuid())
+  applicationId     String
+  attemptNumber     Int
+  method            ApplicationMethod
+  status            ApplicationStatus
+  providerReference String?
+  failureReason     String?
+
+  startedAt   DateTime  @default(now())
+  completedAt DateTime?
+
+  application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@index([applicationId])
+  @@map("application_attempts")
 }
