@@ -3,6 +3,7 @@ import { authRouter } from "../modules/auth/auth.routes.js";
 import { profileRouter } from "../modules/profile/profile.routes.js";
 import { resumeRouter } from "../modules/resume/resume.routes.js";
 import { internshipRouter } from "../modules/internships/internship.routes.js";
+import { matchingRouter } from "../modules/matching/matching.routes.js";
 
 export const apiRouter = Router();
 
@@ -14,3 +15,4 @@ apiRouter.use("/auth", authRouter);
 apiRouter.use("/profile", profileRouter);
 apiRouter.use("/resume", resumeRouter);
 apiRouter.use("/internships", internshipRouter);
+apiRouter.use("/matches", matchingRouter);

@@ -43,6 +43,13 @@ export interface ParsedResume {
 
 /** Requirements extracted or provided for a single internship posting. */
 export interface ParsedJobRequirements {
+  /**
+   * Only set when the caller has the posting's title on hand (e.g. the
+   * matching pipeline reconstructing this from a stored Internship) — a
+   * JobDescriptionParser only ever sees free-text description, so it
+   * always leaves this undefined. Used for role-similarity scoring.
+   */
+  title?: string;
   requiredSkills: string[];
   preferredSkills: string[];
   minGraduationYear: number | null;

@@ -45,6 +45,9 @@ describe("App routing + auth", () => {
           ),
         );
       }
+      if (url.includes("/matches/recommendations")) {
+        return Promise.resolve(jsonResponse({ items: [], total: 0, page: 1, pageSize: 3, totalPages: 1 }));
+      }
       return Promise.resolve(jsonResponse({}, 200));
     });
 

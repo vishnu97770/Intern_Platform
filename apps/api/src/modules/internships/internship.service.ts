@@ -3,14 +3,15 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "../../lib/prisma.js";
 import { NotFoundError } from "../../lib/errors.js";
 
-const internshipInclude = {
+/** Exported so the matching module (Phase 4) can reuse the exact same shape and mapping. */
+export const internshipInclude = {
   provider: true,
   skills: { include: { skill: true } },
 } satisfies Prisma.InternshipInclude;
 
-type InternshipWithRelations = Prisma.InternshipGetPayload<{ include: typeof internshipInclude }>;
+export type InternshipWithRelations = Prisma.InternshipGetPayload<{ include: typeof internshipInclude }>;
 
-function toSummaryDTO(internship: InternshipWithRelations): InternshipSummaryDTO {
+export function toInternshipSummaryDTO(internship: InternshipWithRelations): InternshipSummaryDTO {
   return {
     id: internship.id,
     title: internship.title,
@@ -34,7 +35,7 @@ function toSummaryDTO(internship: InternshipWithRelations): InternshipSummaryDTO
 
 function toDetailDTO(internship: InternshipWithRelations): InternshipDetailDTO {
   return {
-    ...toSummaryDTO(internship),
+    ...toInternshipSummaryDTO(internship),
     description: internship.description,
     responsibilities: internship.responsibilities,
     requirements: internship.requirements,
@@ -81,7 +82,7 @@ export async function searchInternships(params: InternshipSearchParams): Promise
   ]);
 
   return {
-    items: rows.map(toSummaryDTO),
+    items: rows.map(toInternshipSummaryDTO),
     total,
     page,
     pageSize,

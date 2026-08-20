@@ -72,11 +72,15 @@ Phase 3 adds: `InternshipProvider`, `Internship`, `InternshipSkill`.
 Duplicate prevention is a `@@unique([providerId, externalId])` constraint,
 so re-ingesting the same provider's feed upserts instead of duplicating.
 
+Phase 4 adds: `MatchResult` — a cached, deterministic score per
+(student, internship) pair, unique on `[studentProfileId, internshipId]`
+so recalculating upserts instead of accumulating history rows.
+
 Future phases will add (not yet created — avoiding unused tables until the
 phase that needs them lands):
 
 ```
-MatchResult, AutoApplyRule, Application, ApplicationAttempt, Notification
+AutoApplyRule, Application, ApplicationAttempt, Notification
 ```
 
 Full target ERD for reference:
@@ -104,7 +108,7 @@ User 1─* Notification
 | 1 | Foundation: project structure, auth, student profile | Done |
 | 2 | Resume upload, extraction, parsing, review | Done |
 | 3 | Internship schema, provider abstraction, listing | Done |
-| 4 | Matching engine, recommendations | Not started |
+| 4 | Matching engine, recommendations | Done |
 | 5 | Application tracking, manual apply flow | Not started |
 | 6 | Auto-apply rules, queue, background workers | Not started |
 | 7 | Production hardening | Not started |

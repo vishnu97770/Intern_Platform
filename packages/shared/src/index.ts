@@ -3,6 +3,7 @@ export * from "./types/auth.js";
 export * from "./types/future.js";
 export * from "./types/resume.js";
 export * from "./types/internship.js";
+export * from "./types/matching.js";
 
 export type { ResumeParser } from "./interfaces/ResumeParser.js";
 export type { JobDescriptionParser } from "./interfaces/JobDescriptionParser.js";

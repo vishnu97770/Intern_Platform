@@ -90,6 +90,7 @@ model StudentProfile {
   experience     Experience[]
   certifications Certification[]
   resumes        Resume[]
+  matchResults   MatchResult[]
 
   @@map("student_profiles")
 }
@@ -273,8 +274,9 @@ model Internship {
   discoveredAt DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  provider InternshipProvider @relation(fields: [providerId], references: [id], onDelete: Cascade)
-  skills   InternshipSkill[]
+  provider     InternshipProvider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  skills       InternshipSkill[]
+  matchResults MatchResult[]
 
   @@unique([providerId, externalId])
   @@index([isActive, discoveredAt])
@@ -295,4 +297,34 @@ model InternshipSkill {
   @@id([internshipId, skillId])
   @@index([skillId])
   @@map("internship_skills")
+}
+
+// ---------------------------------------------------------------------------
+// Matching Engine (Phase 4)
+// ---------------------------------------------------------------------------
+
+/// A deterministic, cached match score between one student and one
+/// internship. Recomputed (upserted, never duplicated) whenever
+/// matching.service.ts calculates or refreshes a match — see
+/// packages/shared MatchingEngine for the scoring contract.
+model MatchResult {
+  id               String @id @default(uuid())
+  studentProfileId String
+  internshipId     String
+  overallScore     Int
+  /// MatchBreakdown (packages/shared/src/types/future.ts), stored as JSON.
+  breakdown        Json
+  /// MatchExplanation (packages/shared/src/types/future.ts), stored as JSON.
+  explanation      Json
+  engineName       String
+
+  computedAt DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  studentProfile StudentProfile @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
+  internship     Internship     @relation(fields: [internshipId], references: [id], onDelete: Cascade)
+
+  @@unique([studentProfileId, internshipId])
+  @@index([studentProfileId, overallScore])
+  @@map("match_results")
 }

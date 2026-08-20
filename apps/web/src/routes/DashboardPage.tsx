@@ -1,4 +1,9 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import type { RecommendationDTO } from "@intern-platform/shared";
+import { getRecommendations } from "../lib/matchingApi";
+import { ApiError } from "../lib/apiClient";
+import { MatchScoreCard } from "../components/MatchScoreCard";
 
 const liveModules = [
   { title: "Resume", description: "Upload a PDF/DOCX resume and review proposed profile data.", to: "/resume" },
@@ -6,7 +11,6 @@ const liveModules = [
 ];
 
 const upcomingModules = [
-  { title: "Matches", description: "See your match score and why you matched.", phase: "Phase 4" },
   { title: "Applications", description: "Track every application in one place.", phase: "Phase 5" },
   { title: "Auto-apply", description: "Configure rules for automatic applications.", phase: "Phase 6" },
 ];
@@ -33,6 +37,8 @@ export function DashboardPage() {
         </p>
       </div>
 
+      <RecommendationsSection />
+
       <ul className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
         {liveModules.map((mod) => (
           <li key={mod.title} className="rounded-lg border border-slate-200 bg-white p-4">
@@ -56,5 +62,57 @@ export function DashboardPage() {
         ))}
       </ul>
     </div>
+  );
+}
+
+function RecommendationsSection() {
+  const [recommendations, setRecommendations] = useState<RecommendationDTO[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    getRecommendations({ pageSize: 3 })
+      .then((res) => setRecommendations(res.items ?? []))
+      .catch((err) => setError(err instanceof ApiError ? err.message : "Couldn't load recommendations."));
+  }, []);
+
+  if (error) return null; // Non-critical widget — fail quietly rather than blocking the dashboard.
+  if (recommendations === null) {
+    return (
+      <p className="mt-6 text-sm text-slate-500" role="status">
+        Finding your best-matching internships…
+      </p>
+    );
+  }
+  if (recommendations.length === 0) {
+    return (
+      <div className="mt-6 rounded-lg border border-slate-200 bg-white p-4 text-sm text-slate-500">
+        No internships to recommend yet.{" "}
+        <Link to="/internships" className="font-medium text-brand-700 hover:underline">
+          Browse and sync internships
+        </Link>{" "}
+        to get matched.
+      </div>
+    );
+  }
+
+  return (
+    <section className="mt-6">
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-semibold text-slate-900">Recommended for you</h2>
+        <Link to="/internships" className="text-sm font-medium text-brand-700 hover:underline">
+          View all internships
+        </Link>
+      </div>
+      <div className="mt-3 flex flex-col gap-4">
+        {recommendations.map((rec) => (
+          <div key={rec.internshipId}>
+            <Link to={`/internships/${rec.internshipId}`} className="text-sm font-medium text-brand-700 hover:underline">
+              {rec.internship.title} — {rec.internship.company}
+            </Link>
+            <MatchScoreCard match={rec} />
+          </div>
+        ))}
+      </div>
+    </section>
   );
 }

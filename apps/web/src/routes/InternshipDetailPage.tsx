@@ -1,14 +1,19 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import type { InternshipDetailDTO } from "@intern-platform/shared";
+import type { InternshipDetailDTO, MatchResultRecordDTO } from "@intern-platform/shared";
 import { getInternship } from "../lib/internshipApi";
+import { calculateMatch, getMatch } from "../lib/matchingApi";
 import { ApiError } from "../lib/apiClient";
+import { Button } from "../components/Button";
+import { MatchScoreCard } from "../components/MatchScoreCard";
 
 export function InternshipDetailPage() {
   const { id } = useParams<{ id: string }>();
   const [internship, setInternship] = useState<InternshipDetailDTO | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [match, setMatch] = useState<MatchResultRecordDTO | null>(null);
+  const [isMatching, setIsMatching] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -17,7 +22,25 @@ export function InternshipDetailPage() {
       .then(setInternship)
       .catch((err) => setError(err instanceof ApiError ? err.message : "Couldn't load this internship."))
       .finally(() => setIsLoading(false));
+
+    getMatch(id)
+      .then(setMatch)
+      .catch(() => {
+        /* Non-critical — the student can still calculate it manually below. */
+      });
   }, [id]);
+
+  async function handleRecalculate() {
+    if (!id) return;
+    setIsMatching(true);
+    try {
+      setMatch(await calculateMatch(id));
+    } catch {
+      // Non-critical widget — leave the previous match (if any) visible.
+    } finally {
+      setIsMatching(false);
+    }
+  }
 
   if (isLoading) {
     return (
@@ -40,6 +63,20 @@ export function InternshipDetailPage() {
       <Link to="/internships" className="text-sm text-brand-700 hover:underline">
         ← Back to internships
       </Link>
+
+      <div className="mt-4">
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="text-sm font-medium text-slate-500">Your match</h2>
+          <Button variant="secondary" onClick={handleRecalculate} isLoading={isMatching}>
+            {match ? "Recalculate" : "Calculate my match"}
+          </Button>
+        </div>
+        {match && (
+          <div className="mt-2">
+            <MatchScoreCard match={match} />
+          </div>
+        )}
+      </div>
 
       <div className="mt-4 rounded-lg border border-slate-200 bg-white p-6">
         <div className="flex flex-wrap items-start justify-between gap-3">
