@@ -54,15 +54,52 @@ const PROVIDER_DEFS: ProviderDef[] = [
   },
 ];
 
-/** Only providers with both an API key and a model configured are usable. */
+/**
+ * Catches the exact mistake that caused the Phase 8 incident (see
+ * PROJECT_PLAN.md): a `*_MODEL` variable set to an API key instead of a
+ * model identifier. Deliberately narrow — only provider-specific key
+ * prefixes and "long, separator-free hex blob" (real model ids are
+ * "vendor/name" or otherwise contain letters/digits/./-, never a bare
+ * 32+ char hex string) trigger it, so a legitimate model id is never
+ * rejected by mistake.
+ */
+function looksLikeCredential(value: string): boolean {
+  if (/^gsk_/.test(value)) return true; // Groq key prefix
+  if (/^sk-or-v1-/.test(value)) return true; // OpenRouter key prefix
+  if (/^sk-/.test(value)) return true; // OpenAI-style key prefix, used by several providers
+  if (value.length >= 32 && /^[0-9a-f]+$/i.test(value)) return true; // raw hex token, e.g. a Together API key
+  return false;
+}
+
+const warnedAboutCredentialLikeModel = new Set<string>();
+
+/**
+ * Only providers with both an API key and a model configured are usable.
+ * A provider whose model looks like a credential is treated as
+ * unconfigured (it would only ever fail against the real API anyway) and
+ * logged once — see looksLikeCredential above.
+ */
 export function getConfiguredLlmProviders(): LlmProviderConfig[] {
   const providers: LlmProviderConfig[] = [];
   for (const def of PROVIDER_DEFS) {
     const apiKey = env[def.apiKeyEnv];
     const model = env[def.modelEnv];
-    if (apiKey && model) {
-      providers.push({ name: def.name, baseUrl: def.baseUrl, apiKey, model, extraHeaders: def.extraHeaders });
+    if (!apiKey || !model) continue;
+
+    if (looksLikeCredential(model)) {
+      if (!warnedAboutCredentialLikeModel.has(def.modelEnv)) {
+        warnedAboutCredentialLikeModel.add(def.modelEnv);
+        logger.warn(
+          { variable: def.modelEnv },
+          `${def.modelEnv} appears to contain a credential, not a model identifier. ` +
+            `Set ${def.modelEnv} to a model identifier (e.g. from the provider's model-listing endpoint or docs) ` +
+            `and keep the API key only in ${def.apiKeyEnv}. This provider is being skipped until it's fixed.`,
+        );
+      }
+      continue;
     }
+
+    providers.push({ name: def.name, baseUrl: def.baseUrl, apiKey, model, extraHeaders: def.extraHeaders });
   }
   return providers;
 }

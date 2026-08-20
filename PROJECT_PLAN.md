@@ -193,17 +193,34 @@ row the deterministic parser and matching engine already use), and every
 string/array is length-capped to what the existing profile/internship
 validators accept.
 
-**Known local configuration issue (as of the last verification pass):** a
-manual smoke test against the three live APIs found `GROQ_MODEL` pointing
-at a model the configured key can't access (HTTP 404), and both
-`TOGETHER_MODEL` and `OPENROUTER_MODEL` holding what look like API-key-shaped
-strings rather than real model identifiers (HTTP 404/400). Until these
-`.env` values are corrected, `isLlmEnabled()` still reports the providers
-as "configured" (key + model both present), but every real call fails and
-the fallback registries transparently drop back to the deterministic
-parser — proven both by the automated fallback tests and by this
-misconfiguration itself, live. No code change is needed once the `.env`
-values are fixed to real model identifiers from each provider's dashboard.
+**Configuration incident and resolution:** an initial manual smoke test
+found `GROQ_MODEL` pointing at a model the configured key can't access
+(HTTP 404), and both `TOGETHER_MODEL` and `OPENROUTER_MODEL` holding
+what looked like API-key-shaped strings rather than real model
+identifiers — one of which matched OpenRouter's own key format and was
+then echoed back into a diagnostic log by OpenRouter's error response.
+Resolution:
+
+1. `getConfiguredLlmProviders()` (lib/llm/llmClient.ts) now runs a
+   `looksLikeCredential()` check on every `*_MODEL` value (provider key
+   prefixes, and a bare 32+ char hex token) before treating that provider
+   as configured — a variable set to a credential is excluded and logged
+   once, naming only the variable, never the value. Covered by
+   `tests/unit/llmClientConfig.test.ts`.
+2. `GROQ_MODEL` and `TOGETHER_MODEL` were corrected locally to model ids
+   verified live against each provider's own `/models` listing endpoint
+   (not guessed) — Groq: `openai/gpt-oss-20b`; Together:
+   `meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo`. A follow-up smoke test
+   confirmed Groq **SUCCESS**; Together returned **HTTP 402 (Payment
+   Required)** — an account billing issue, not a model-id or code
+   problem — see PROJECT_PLAN.md "User Action Required" in the phase's
+   commit for details.
+3. The OpenRouter API key that was echoed back is treated as compromised
+   and was not reused. `OPENROUTER_MODEL` was corrected to
+   `openai/gpt-oss-20b:free`, but `OPENROUTER_API_KEY` still holds the
+   old, compromised value pending manual rotation in the OpenRouter
+   dashboard — no authenticated OpenRouter call has been made since the
+   incident, and none will be until a new key is confirmed in place.
 
 ## Non-goals / explicit restrictions
 
