@@ -1,6 +1,9 @@
-// Intern Platform — Phase 1 schema (Authentication + Student Profile).
+// Intern Platform schema.
 //
-// Future phases add: Resume, InternshipProvider, Internship, InternshipSkill,
+// Phase 1: Authentication + Student Profile.
+// Phase 2: Resume.
+//
+// Future phases add: InternshipProvider, Internship, InternshipSkill,
 // MatchResult, AutoApplyRule, Application, ApplicationAttempt, Notification.
 // See PROJECT_PLAN.md for the full target ERD — those tables are introduced
 // in the phase that actually uses them, not created empty ahead of time.
@@ -86,6 +89,7 @@ model StudentProfile {
   projects       Project[]
   experience     Experience[]
   certifications Certification[]
+  resumes        Resume[]
 
   @@map("student_profiles")
 }
@@ -169,4 +173,44 @@ model Certification {
 
   @@index([studentProfileId])
   @@map("certifications")
+}
+
+// ---------------------------------------------------------------------------
+// Resume (Phase 2)
+// ---------------------------------------------------------------------------
+
+enum ResumeStatus {
+  UPLOADED
+  PARSED
+  FAILED
+  CONFIRMED
+}
+
+/// A single uploaded resume file. Parsing never touches StudentProfile —
+/// `parsedData` is only a proposal until the student explicitly confirms
+/// it (see resume.service.ts). `storageKey` is opaque to callers; only the
+/// configured StorageProvider knows how to resolve it to bytes.
+model Resume {
+  id               String       @id @default(uuid())
+  studentProfileId String
+  fileName         String
+  mimeType         String
+  fileSizeBytes    Int
+  storageKey       String
+  status           ResumeStatus @default(UPLOADED)
+  rawText          String?
+  /// ParsedResume (packages/shared/src/types/future.ts), stored as JSON.
+  parsedData       Json?
+  parserName       String?
+  confidence       Float?
+  failureReason    String?
+  confirmedAt      DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  studentProfile StudentProfile @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
+
+  @@index([studentProfileId, createdAt])
+  @@map("resumes")
 }

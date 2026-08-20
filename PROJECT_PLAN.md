@@ -65,11 +65,14 @@ GraphQL layer) later.
 Phase 1 introduces: `User`, `RefreshToken`, `StudentProfile`, `Skill`,
 `StudentSkill`, `Project`, `Experience`, `Certification`.
 
+Phase 2 adds: `Resume` (file metadata + parsed proposal; never applied to
+`StudentProfile` until the student calls `POST /resume/:id/confirm`).
+
 Future phases will add (not yet created — avoiding unused tables until the
 phase that needs them lands):
 
 ```
-Resume, InternshipProvider, Internship, InternshipSkill, MatchResult,
+InternshipProvider, Internship, InternshipSkill, MatchResult,
 AutoApplyRule, Application, ApplicationAttempt, Notification
 ```
 
@@ -95,8 +98,8 @@ User 1─* Notification
 
 | Phase | Scope | Status |
 |---|---|---|
-| 1 | Foundation: project structure, auth, student profile | In Progress |
-| 2 | Resume upload, extraction, parsing, review | Not started |
+| 1 | Foundation: project structure, auth, student profile | Done |
+| 2 | Resume upload, extraction, parsing, review | Done |
 | 3 | Internship schema, provider abstraction, listing | Not started |
 | 4 | Matching engine, recommendations | Not started |
 | 5 | Application tracking, manual apply flow | Not started |

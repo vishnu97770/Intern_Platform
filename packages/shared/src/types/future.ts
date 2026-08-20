@@ -6,7 +6,7 @@
  * these shapes to be refined as each phase is actually implemented.
  */
 
-import type { WorkModePreference } from "./profile.js";
+import type { SkillCategory, WorkModePreference } from "./profile.js";
 
 /** Best-effort structured data extracted from an uploaded resume file. */
 export interface ParsedResume {
@@ -19,7 +19,11 @@ export interface ParsedResume {
   branch: string | null;
   graduationYear: number | null;
   cgpa: number | null;
-  skills: string[];
+  githubUrl: string | null;
+  linkedinUrl: string | null;
+  portfolioUrl: string | null;
+  /** Categorized so a confirmed skill maps directly onto Skill.category (languages, frameworks, databases, ...). */
+  skills: Array<{ name: string; category: SkillCategory }>;
   projects: Array<{
     title: string;
     description: string | null;

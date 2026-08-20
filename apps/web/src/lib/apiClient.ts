@@ -74,3 +74,51 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
   if (res.status === 204) return undefined as T;
   return res.json() as Promise<T>;
 }
+
+async function rawFormRequest(path: string, formData: FormData): Promise<Response> {
+  const headers: Record<string, string> = {};
+  // Deliberately no Content-Type here — the browser sets it (with the
+  // multipart boundary) only when the header is left unset.
+  if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
+
+  return fetch(`${API_BASE_URL}${path}`, {
+    method: "POST",
+    headers,
+    credentials: "include",
+    body: formData,
+  });
+}
+
+/** Same refresh-and-retry behavior as apiRequest, for multipart/form-data uploads (e.g. resume files). */
+export async function apiUpload<T>(path: string, formData: FormData): Promise<T> {
+  let res = await rawFormRequest(path, formData);
+
+  if (res.status === 401) {
+    const refreshed = await tryRefresh();
+    if (refreshed) res = await rawFormRequest(path, formData);
+  }
+
+  if (!res.ok) {
+    const payload = await res.json().catch(() => null);
+    throw new ApiError(payload?.error?.message ?? res.statusText, res.status, payload?.error?.code ?? "UNKNOWN");
+  }
+
+  return res.json() as Promise<T>;
+}
+
+/** Fetches a binary response (e.g. the original resume file) as a Blob, with the same auth/refresh behavior. */
+export async function apiRequestBlob(path: string): Promise<Blob> {
+  let res = await rawRequest(path, {});
+
+  if (res.status === 401) {
+    const refreshed = await tryRefresh();
+    if (refreshed) res = await rawRequest(path, {});
+  }
+
+  if (!res.ok) {
+    const payload = await res.json().catch(() => null);
+    throw new ApiError(payload?.error?.message ?? res.statusText, res.status, payload?.error?.code ?? "UNKNOWN");
+  }
+
+  return res.blob();
+}

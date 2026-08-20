@@ -7,6 +7,7 @@ import { LoginPage } from "./routes/LoginPage";
 import { RegisterPage } from "./routes/RegisterPage";
 import { DashboardPage } from "./routes/DashboardPage";
 import { ProfilePage } from "./routes/ProfilePage";
+import { ResumePage } from "./routes/ResumePage";
 import { NotFoundPage } from "./routes/NotFoundPage";
 
 export function App() {
@@ -31,6 +32,14 @@ export function App() {
             element={
               <ProtectedRoute>
                 <ProfilePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/resume"
+            element={
+              <ProtectedRoute>
+                <ResumePage />
               </ProtectedRoute>
             }
           />

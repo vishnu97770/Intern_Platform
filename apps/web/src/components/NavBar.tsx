@@ -29,6 +29,9 @@ export function NavBar() {
             <NavLink to="/profile" className={linkClass}>
               Profile
             </NavLink>
+            <NavLink to="/resume" className={linkClass}>
+              Resume
+            </NavLink>
             <Button variant="secondary" onClick={handleLogout}>
               Log out
             </Button>
