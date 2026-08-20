@@ -8,3 +8,11 @@ export function validateBody<T>(schema: ZodSchema<T>) {
     next();
   };
 }
+
+/** Same as validateBody, but for `req.query` (e.g. search/filter/pagination params). */
+export function validateQuery<T>(schema: ZodSchema<T>) {
+  return (req: Request, _res: Response, next: NextFunction): void => {
+    req.query = schema.parse(req.query) as typeof req.query;
+    next();
+  };
+}

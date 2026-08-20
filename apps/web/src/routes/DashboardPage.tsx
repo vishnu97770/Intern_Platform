@@ -1,8 +1,11 @@
 import { Link } from "react-router-dom";
 
+const liveModules = [
+  { title: "Resume", description: "Upload a PDF/DOCX resume and review proposed profile data.", to: "/resume" },
+  { title: "Internships", description: "Discover internships from every connected provider.", to: "/internships" },
+];
+
 const upcomingModules = [
-  { title: "Resume", description: "Upload a PDF/DOCX resume and auto-fill your profile.", phase: "Phase 2" },
-  { title: "Internships", description: "Discover internships from multiple sources.", phase: "Phase 3" },
   { title: "Matches", description: "See your match score and why you matched.", phase: "Phase 4" },
   { title: "Applications", description: "Track every application in one place.", phase: "Phase 5" },
   { title: "Auto-apply", description: "Configure rules for automatic applications.", phase: "Phase 6" },
@@ -22,11 +25,24 @@ export function DashboardPage() {
           <Link to="/profile" className="font-medium text-brand-700 hover:underline">
             career profile
           </Link>{" "}
-          so future matching has something to work with.
+          or{" "}
+          <Link to="/resume" className="font-medium text-brand-700 hover:underline">
+            upload a resume
+          </Link>{" "}
+          to have it filled in for you.
         </p>
       </div>
 
       <ul className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
+        {liveModules.map((mod) => (
+          <li key={mod.title} className="rounded-lg border border-slate-200 bg-white p-4">
+            <Link to={mod.to} className="flex items-center justify-between">
+              <h2 className="text-sm font-semibold text-slate-900">{mod.title}</h2>
+              <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">Live</span>
+            </Link>
+            <p className="mt-1 text-sm text-slate-500">{mod.description}</p>
+          </li>
+        ))}
         {upcomingModules.map((mod) => (
           <li key={mod.title} className="rounded-lg border border-slate-200 bg-white p-4">
             <div className="flex items-center justify-between">

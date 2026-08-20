@@ -68,12 +68,15 @@ Phase 1 introduces: `User`, `RefreshToken`, `StudentProfile`, `Skill`,
 Phase 2 adds: `Resume` (file metadata + parsed proposal; never applied to
 `StudentProfile` until the student calls `POST /resume/:id/confirm`).
 
+Phase 3 adds: `InternshipProvider`, `Internship`, `InternshipSkill`.
+Duplicate prevention is a `@@unique([providerId, externalId])` constraint,
+so re-ingesting the same provider's feed upserts instead of duplicating.
+
 Future phases will add (not yet created — avoiding unused tables until the
 phase that needs them lands):
 
 ```
-InternshipProvider, Internship, InternshipSkill, MatchResult,
-AutoApplyRule, Application, ApplicationAttempt, Notification
+MatchResult, AutoApplyRule, Application, ApplicationAttempt, Notification
 ```
 
 Full target ERD for reference:
@@ -100,7 +103,7 @@ User 1─* Notification
 |---|---|---|
 | 1 | Foundation: project structure, auth, student profile | Done |
 | 2 | Resume upload, extraction, parsing, review | Done |
-| 3 | Internship schema, provider abstraction, listing | Not started |
+| 3 | Internship schema, provider abstraction, listing | Done |
 | 4 | Matching engine, recommendations | Not started |
 | 5 | Application tracking, manual apply flow | Not started |
 | 6 | Auto-apply rules, queue, background workers | Not started |

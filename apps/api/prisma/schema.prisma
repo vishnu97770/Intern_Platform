@@ -2,11 +2,11 @@
 //
 // Phase 1: Authentication + Student Profile.
 // Phase 2: Resume.
+// Phase 3: Internship discovery (InternshipProvider, Internship, InternshipSkill).
 //
-// Future phases add: InternshipProvider, Internship, InternshipSkill,
-// MatchResult, AutoApplyRule, Application, ApplicationAttempt, Notification.
-// See PROJECT_PLAN.md for the full target ERD — those tables are introduced
-// in the phase that actually uses them, not created empty ahead of time.
+// Future phases add: MatchResult, AutoApplyRule, Application,
+// ApplicationAttempt, Notification. See PROJECT_PLAN.md for the full target
+// ERD — those tables are introduced in the phase that actually uses them.
 
 generator client {
   provider = "prisma-client-js"
@@ -37,12 +37,12 @@ model User {
 /// Refresh tokens are stored as a hash (never the raw token) so a leaked
 /// database dump does not itself grant session access. Rotated on every use.
 model RefreshToken {
-  id         String    @id @default(uuid())
-  userId     String
-  tokenHash  String    @unique
-  expiresAt  DateTime
-  revokedAt  DateTime?
-  createdAt  DateTime  @default(now())
+  id        String    @id @default(uuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -62,29 +62,29 @@ enum WorkModePreference {
 }
 
 model StudentProfile {
-  id        String @id @default(uuid())
-  userId    String @unique
+  id     String @id @default(uuid())
+  userId String @unique
 
-  fullName            String
-  phone               String?
-  location            String?
-  college             String?
-  degree              String?
-  branch              String?
-  graduationYear      Int?
-  cgpa                Float?
-  bio                 String?
-  githubUrl           String?
-  linkedinUrl         String?
-  portfolioUrl        String?
-  preferredRoles      String[] @default([])
-  preferredLocations  String[] @default([])
-  workModePreference  WorkModePreference @default(ANY)
+  fullName           String
+  phone              String?
+  location           String?
+  college            String?
+  degree             String?
+  branch             String?
+  graduationYear     Int?
+  cgpa               Float?
+  bio                String?
+  githubUrl          String?
+  linkedinUrl        String?
+  portfolioUrl       String?
+  preferredRoles     String[]           @default([])
+  preferredLocations String[]           @default([])
+  workModePreference WorkModePreference @default(ANY)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   skills         StudentSkill[]
   projects       Project[]
   experience     Experience[]
@@ -111,7 +111,8 @@ model Skill {
   name     String        @unique
   category SkillCategory @default(OTHER)
 
-  students StudentSkill[]
+  students    StudentSkill[]
+  internships InternshipSkill[]
 
   @@map("skills")
 }
@@ -130,11 +131,11 @@ model StudentSkill {
 }
 
 model Project {
-  id               String   @id @default(uuid())
+  id               String    @id @default(uuid())
   studentProfileId String
   title            String
   description      String?
-  techStack        String[] @default([])
+  techStack        String[]  @default([])
   url              String?
   startDate        DateTime?
   endDate          DateTime?
@@ -213,4 +214,85 @@ model Resume {
 
   @@index([studentProfileId, createdAt])
   @@map("resumes")
+}
+
+// ---------------------------------------------------------------------------
+// Internship Discovery (Phase 3)
+// ---------------------------------------------------------------------------
+
+/// A source of internship listings, e.g. a mock/seed provider in dev or an
+/// official partner API in production. Matches InternshipProvider.slug
+/// (packages/shared) — rows are upserted by slug when a provider ingests.
+model InternshipProvider {
+  id          String   @id @default(uuid())
+  slug        String   @unique
+  displayName String
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  internships Internship[]
+
+  @@map("internship_providers")
+}
+
+enum InternshipWorkMode {
+  REMOTE
+  HYBRID
+  ONSITE
+}
+
+/// A single internship listing, normalized from a provider's raw payload.
+/// `externalId` is the provider's own id for the posting; the
+/// (providerId, externalId) pair is the duplicate-prevention key used by
+/// the ingestion pipeline (internship.ingestion.service.ts).
+model Internship {
+  id                  String              @id @default(uuid())
+  providerId          String
+  externalId          String
+  title               String
+  company             String
+  description         String
+  responsibilities    String?
+  requirements        String?
+  location            String?
+  workMode            InternshipWorkMode?
+  stipendMin          Int?
+  stipendMax          Int?
+  stipendCurrency     String?             @default("INR")
+  durationMonths      Int?
+  applicationDeadline DateTime?
+  minGraduationYear   Int?
+  maxGraduationYear   Int?
+  minExperienceMonths Int?
+  eligibility         String?
+  sourceUrl           String
+  applicationUrl      String
+  isActive            Boolean             @default(true)
+
+  discoveredAt DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  provider InternshipProvider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  skills   InternshipSkill[]
+
+  @@unique([providerId, externalId])
+  @@index([isActive, discoveredAt])
+  @@index([applicationDeadline])
+  @@index([company])
+  @@map("internships")
+}
+
+model InternshipSkill {
+  internshipId String
+  skillId      String
+  /// true = required, false = preferred/nice-to-have.
+  isRequired   Boolean @default(true)
+
+  internship Internship @relation(fields: [internshipId], references: [id], onDelete: Cascade)
+  skill      Skill      @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  @@id([internshipId, skillId])
+  @@index([skillId])
+  @@map("internship_skills")
 }

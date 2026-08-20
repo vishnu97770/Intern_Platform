@@ -1,5 +1,5 @@
 import type { ParsedResume, ResumeParser } from "@intern-platform/shared";
-import { lookupSkill, SKILLS_DICTIONARY } from "./skillsDictionary.js";
+import { escapeRegex, lookupSkill, SKILLS_DICTIONARY } from "../../../lib/skills/skillsDictionary.js";
 import { DOCX_MIME_TYPE, extractResumeText, PDF_MIME_TYPE } from "./textExtraction.js";
 
 /**
@@ -176,10 +176,6 @@ function extractEducationDetails(educationLines: string[]): { degree: string | n
   }
 
   return { degree, branch, college };
-}
-
-function escapeRegex(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 function extractSkills(skillsLines: string[], wholeText: string): Array<{ name: string; category: import("@intern-platform/shared").SkillCategory }> {

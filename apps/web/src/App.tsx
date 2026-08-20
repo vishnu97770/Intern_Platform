@@ -8,6 +8,8 @@ import { RegisterPage } from "./routes/RegisterPage";
 import { DashboardPage } from "./routes/DashboardPage";
 import { ProfilePage } from "./routes/ProfilePage";
 import { ResumePage } from "./routes/ResumePage";
+import { InternshipsPage } from "./routes/InternshipsPage";
+import { InternshipDetailPage } from "./routes/InternshipDetailPage";
 import { NotFoundPage } from "./routes/NotFoundPage";
 
 export function App() {
@@ -40,6 +42,22 @@ export function App() {
             element={
               <ProtectedRoute>
                 <ResumePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/internships"
+            element={
+              <ProtectedRoute>
+                <InternshipsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/internships/:id"
+            element={
+              <ProtectedRoute>
+                <InternshipDetailPage />
               </ProtectedRoute>
             }
           />

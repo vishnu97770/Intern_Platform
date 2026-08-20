@@ -48,8 +48,15 @@ export interface ParsedJobRequirements {
   minGraduationYear: number | null;
   maxGraduationYear: number | null;
   minExperienceMonths: number | null;
+  /** ANY never appears here — a posting has an actual work mode, or none was stated. */
   workMode: WorkModePreference | null;
   locations: string[];
+  stipendMin: number | null;
+  stipendMax: number | null;
+  stipendCurrency: string | null;
+  durationMonths: number | null;
+  /** ISO date, or null if no deadline was stated/detected. */
+  applicationDeadline: string | null;
 }
 
 export interface MatchBreakdown {

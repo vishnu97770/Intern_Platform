@@ -4,7 +4,12 @@ import type { SkillCategory } from "@intern-platform/shared";
  * Curated catalog of recognized skills, mirroring Skill.category. Matching
  * against a known dictionary (rather than treating every comma-separated
  * token as a skill) keeps extraction precise and avoids false positives
- * from common English words appearing in a resume.
+ * from common English words appearing in free text.
+ *
+ * Shared between the resume parser (Phase 2) and the job description
+ * parser (Phase 3) so a "React" mentioned on a resume and a "React"
+ * required by an internship posting resolve to the exact same Skill row,
+ * which is what makes skill-based matching (Phase 4) meaningful.
  *
  * Key = lowercase match key, value = canonical display name + category.
  */
@@ -47,4 +52,8 @@ register("TOOL", [
 /** Case-insensitive exact-token lookup, e.g. "python" → {name:"Python", category:"LANGUAGE"}. */
 export function lookupSkill(token: string): { name: string; category: SkillCategory } | null {
   return SKILLS_DICTIONARY[token.trim().toLowerCase()] ?? null;
+}
+
+export function escapeRegex(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
